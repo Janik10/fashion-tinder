@@ -1,17 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { FeedQueryDto, ItemDto } from './dto/items.dto';
 
 @Injectable()
 export class ItemsService {
   constructor(private prisma: PrismaService) {}
 
-  async getFeed(cursor?: string, take: number = 20) {
+  async getFeed(query: FeedQueryDto, take: number = 20) {
+    const { cursor, gender, season } = query;
+    
     const items = await this.prisma.item.findMany({
       take,
       skip: cursor ? 1 : 0,
       cursor: cursor ? { id: cursor } : undefined,
       where: {
         active: true,
+        ...(gender && { gender }),
+        ...(season && { season }),
       },
       orderBy: {
         createdAt: 'desc',
@@ -28,21 +33,18 @@ export class ItemsService {
   }
 
   async getById(id: string) {
-    return this.prisma.item.findUnique({
+    const item = await this.prisma.item.findUnique({
       where: { id },
     });
+
+    if (!item) {
+      throw new NotFoundException(`Item with ID ${id} not found`);
+    }
+
+    return item;
   }
 
-  async importItems(items: Array<{
-    name: string;
-    brand: string;
-    price: number;
-    currency?: string;
-    images: string[];
-    tags: string[];
-    gender?: string;
-    season?: string;
-  }>) {
+  async importItems(items: ItemDto[]) {
     return this.prisma.item.createMany({
       data: items.map(item => ({
         ...item,

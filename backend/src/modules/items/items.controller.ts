@@ -6,9 +6,11 @@ import {
   Body,
   UseGuards,
   Query,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ItemsService } from './items.service';
+import { FeedQueryDto, ImportItemsDto } from './dto/items.dto';
 
 @Controller()
 export class ItemsController {
@@ -16,31 +18,19 @@ export class ItemsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('feed')
-  getFeed(@Query('cursor') cursor?: string) {
-    return this.itemsService.getFeed(cursor);
+  getFeed(@Query() query: FeedQueryDto) {
+    return this.itemsService.getFeed(query);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('items/:id')
-  getItem(@Param('id') id: string) {
+  getItem(@Param('id', ParseUUIDPipe) id: string) {
     return this.itemsService.getById(id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('items/import')
-  importItems(
-    @Body()
-    items: Array<{
-      name: string;
-      brand: string;
-      price: number;
-      currency?: string;
-      images: string[];
-      tags: string[];
-      gender?: string;
-      season?: string;
-    }>,
-  ) {
-    return this.itemsService.importItems(items);
+  importItems(@Body() dto: ImportItemsDto) {
+    return this.itemsService.importItems(dto.items);
   }
 }
