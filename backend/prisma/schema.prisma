@@ -1,0 +1,103 @@
+// Prisma schema for Fashion Tinder MVP
+// Save as schema.prisma in backend/prisma/
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+  avatarUrl    String?  
+  bio          String?
+  sizes        Json?
+  createdAt    DateTime @default(now())
+  likes        Like[]
+  saves        Save[]
+  passes       Pass[]
+  friendshipsA Friendship[] @relation("A")
+  friendshipsB Friendship[] @relation("B")
+}
+
+model Item {
+  id        String   @id @default(cuid())
+  name      String
+  brand     String
+  price     Decimal  @db.Decimal(10,2)
+  currency  String   @default("USD")
+  images    String[]
+  tags      String[]
+  gender    String?  
+  season    String?  
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  likes     Like[]
+  saves     Save[]
+  passes    Pass[]
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  itemId    String
+  createdAt DateTime @default(now())
+  @@unique([userId, itemId])
+  user      User     @relation(fields: [userId], references: [id])
+  item      Item     @relation(fields: [itemId], references: [id])
+}
+
+model Save {
+  id        String   @id @default(cuid())
+  userId    String
+  itemId    String
+  createdAt DateTime @default(now())
+  @@unique([userId, itemId])
+  user      User     @relation(fields: [userId], references: [id])
+  item      Item     @relation(fields: [itemId], references: [id])
+}
+
+model Pass {
+  id        String   @id @default(cuid())
+  userId    String
+  itemId    String
+  createdAt DateTime @default(now())
+  @@unique([userId, itemId])
+  user      User     @relation(fields: [userId], references: [id])
+  item      Item     @relation(fields: [itemId], references: [id])
+}
+
+model Friendship {
+  id        String   @id @default(cuid())
+  userAId   String
+  userBId   String
+  status    String   
+  createdAt DateTime @default(now())
+  @@unique([userAId, userBId])
+  userA     User     @relation("A", fields: [userAId], references: [id])
+  userB     User     @relation("B", fields: [userBId], references: [id])
+}
+
+model VoteSession {
+  id        String   @id @default(cuid())
+  hostId    String
+  code      String   @unique 
+  itemIds   String[]
+  createdAt DateTime @default(now())
+}
+
+model Vote {
+  id            String   @id @default(cuid())
+  sessionId     String
+  userId        String
+  itemId        String
+  value         Int      
+  createdAt     DateTime @default(now())
+  @@unique([sessionId, userId, itemId])
+}

@@ -1,0 +1,20 @@
+{
+  "name": "fashion-tinder",
+  "version": "1.0.0",
+  "description": "Swipe-based fashion discovery app (Tinder for fashion).",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Janik10/fashion-tinder.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Janik10/fashion-tinder/issues"
+  },
+  "homepage": "https://github.com/Janik10/fashion-tinder#readme"
+}
