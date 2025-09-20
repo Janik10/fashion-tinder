@@ -25,21 +25,46 @@ export const useItemStore = create<ItemState>((set: any, get: any) => ({
   loadFeed: async (cursor?: string) => {
     try {
       set({ isLoading: true, error: null });
-      const token = useAuthStore.getState().token;
-      const response = await fetch(
-        `${API_URL}/feed${cursor ? `?cursor=${cursor}` : ''}`,
+      
+      // Temporary: Return sample data instead of making API call
+      const sampleItems = [
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
+          id: '1',
+          name: 'Classic White Sneakers',
+          brand: 'Nike',
+          price: 99.99,
+          currency: 'USD',
+          images: ['https://placehold.co/400x600/png'],
+          tags: ['shoes', 'casual', 'streetwear'],
+          gender: 'unisex',
+          season: 'all',
+        },
+        {
+          id: '2',
+          name: 'Denim Jacket',
+          brand: 'Levi\'s',
+          price: 129.99,
+          currency: 'USD',
+          images: ['https://placehold.co/400x600/png'],
+          tags: ['outerwear', 'casual', 'denim'],
+          gender: 'unisex',
+          season: 'spring',
+        },
+        {
+          id: '3',
+          name: 'Summer Dress',
+          brand: 'Zara',
+          price: 79.99,
+          currency: 'USD',
+          images: ['https://placehold.co/400x600/png'],
+          tags: ['dress', 'summer', 'casual'],
+          gender: 'women',
+          season: 'summer',
+        },
+      ];
 
       set({
-        feed: cursor ? [...get().feed, ...data.items] : data.items,
+        feed: cursor ? [...get().feed, ...sampleItems] : sampleItems,
         isLoading: false,
       });
     } catch (error) {
@@ -77,72 +102,44 @@ export const useItemStore = create<ItemState>((set: any, get: any) => ({
   likeItem: async (itemId: string) => {
     try {
       set({ error: null });
-      const token = useAuthStore.getState().token;
-      const response = await fetch(`${API_URL}/interactions/like/${itemId}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message);
-      }
+      // Remove the first item from the feed
+      const feed = get().feed;
+      set({ feed: feed.slice(1) });
+      // In a real app, this would make an API call
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to like item',
       });
-      throw error;
     }
   },
 
   passItem: async (itemId: string) => {
     try {
       set({ error: null });
-      const token = useAuthStore.getState().token;
-      const response = await fetch(`${API_URL}/interactions/pass/${itemId}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message);
-      }
+      // Remove the first item from the feed
+      const feed = get().feed;
+      set({ feed: feed.slice(1) });
+      // In a real app, this would make an API call
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to pass item',
       });
-      throw error;
     }
   },
 
   saveItem: async (itemId: string) => {
     try {
       set({ error: null });
-      const token = useAuthStore.getState().token;
-      const response = await fetch(`${API_URL}/interactions/save/${itemId}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message);
+      // Add to saved items locally
+      const item = get().feed.find(item => item.id === itemId);
+      if (item) {
+        set({ savedItems: [...get().savedItems, item] });
       }
-
-      // Reload saved items after saving
-      await get().loadSavedItems();
+      // In a real app, this would make an API call
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to save item',
       });
-      throw error;
     }
   },
 }));
