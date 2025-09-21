@@ -1,0 +1,29 @@
+{
+  "name": "fashion-tinder-backend",
+  "version": "1.0.0",
+  "description": "Fashion Tinder Backend API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "db:setup": "node scripts/setup-database.js",
+    "db:seed": "node scripts/seed-database.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mysql2": "^3.6.5",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": ["fashion", "tinder", "api", "nodejs", "mysql"],
+  "author": "Fashion Tinder Team",
+  "license": "MIT"
+}
