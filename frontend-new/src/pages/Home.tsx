@@ -426,7 +426,7 @@ export default function Home() {
 
       {/* Main Swipe Area */}
       <div className="flex-1 flex items-center justify-center px-4 pb-32">
-        <div className="relative w-[420px] h-[680px] card-stack">
+        <div className="relative w-[300px] h-[500px] sm:w-[420px] sm:h-[680px] card-stack">
           {/* Show next 3 cards */}
           {currentItems.slice(currentIndex, currentIndex + 3).map((item, index) => (
             <FashionCard

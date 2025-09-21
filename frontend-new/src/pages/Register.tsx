@@ -93,6 +93,9 @@ export default function Register() {
                   onChange={(e) => setUsername(e.target.value)}
                   required
                 />
+                <p className="text-xs text-muted-foreground">
+                  Username must be at least 3 characters long
+                </p>
               </div>
               
               <div className="space-y-2">

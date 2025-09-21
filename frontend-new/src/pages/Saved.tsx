@@ -2,12 +2,12 @@ import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Share2, Bookmark, Trash2 } from "lucide-react";
+import { Bookmark, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 // Import fashion images as fallbacks
 import fashion1 from "@/assets/fashion-1.jpg";
@@ -61,6 +61,15 @@ export default function Saved() {
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [removedItems, setRemovedItems] = useState<string[]>([]);
+
+  // Load removed items from localStorage on component mount
+  useEffect(() => {
+    const saved = localStorage.getItem('fashion_removed_items');
+    if (saved) {
+      setRemovedItems(JSON.parse(saved));
+    }
+  }, []);
 
   // Fetch saved items from backend or use fallback
   const { data: savedData } = useQuery({
@@ -70,8 +79,8 @@ export default function Saved() {
     retry: false,
   });
 
-  // Format backend saved items
-  const savedItems = savedData?.items ? savedData.items.map(({ item, savedAt }) => {
+  // Format backend saved items and filter out removed items
+  const allSavedItems = savedData?.items ? savedData.items.map(({ item, savedAt }) => {
     // Generate diverse colors for saved items too
     const generateColors = () => {
       const colorSets = [
@@ -100,6 +109,9 @@ export default function Saved() {
     };
   }) : fallbackSavedItems;
 
+  // Filter out removed items
+  const savedItems = allSavedItems.filter(item => !removedItems.includes(item.id));
+
   // Filter items by selected category
   const filteredItems = selectedCategory === "All"
     ? savedItems
@@ -115,25 +127,21 @@ export default function Saved() {
   });
 
   const handleRemoveItem = (itemId: string, itemName: string) => {
+    // Add item to removed list for immediate UI update
+    const newRemovedItems = [...removedItems, itemId];
+    setRemovedItems(newRemovedItems);
+
+    // Save to localStorage for persistence
+    localStorage.setItem('fashion_removed_items', JSON.stringify(newRemovedItems));
+
+    // Also try to sync with backend if authenticated
     if (isAuthenticated) {
       removeMutation.mutate(itemId);
     }
+
     toast.success(`Removed ${itemName} from saved items`);
   };
 
-  const handleShareItem = (itemName: string) => {
-    // Simple share functionality - could be enhanced with actual sharing
-    if (navigator.share) {
-      navigator.share({
-        title: `Check out this fashion item: ${itemName}`,
-        text: `I found this amazing piece on Fashion Tinder: ${itemName}`,
-      });
-    } else {
-      // Fallback - copy to clipboard
-      navigator.clipboard.writeText(`Check out this fashion item: ${itemName}`);
-      toast.success(`${itemName} link copied to clipboard!`);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background page-enter pb-20">
@@ -161,41 +169,25 @@ export default function Saved() {
 
       {/* Items Grid */}
       <div className="px-6">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
           {filteredItems.map((item) => (
-            <Card key={item.id} className="overflow-hidden group hover:shadow-lg transition-all duration-300">
+            <Card key={item.id} className="overflow-hidden group hover:shadow-lg transition-all duration-300 max-w-[240px]">
               <div className="relative">
-                <img 
+                <img
                   src={item.imageUrl}
                   alt={item.name}
-                  className="w-full h-48 object-cover"
+                  className="w-full h-[420px] object-cover"
                 />
                 
                 {/* Overlay Actions */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                   <Button
                     size="sm"
                     variant="secondary"
-                    className="rounded-full w-10 h-10 p-0 bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                    onClick={() => handleShareItem(item.name)}
-                  >
-                    <Share2 className="w-4 h-4 text-white" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="rounded-full w-10 h-10 p-0 bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                    onClick={() => toast.success(`Kept ${item.name} in saved items!`)}
-                  >
-                    <Bookmark className="w-4 h-4 text-white" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="rounded-full w-10 h-10 p-0 bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                    className="rounded-full w-12 h-12 p-0 bg-red-500/80 backdrop-blur-sm hover:bg-red-600/90"
                     onClick={() => handleRemoveItem(item.id, item.name)}
                   >
-                    <Trash2 className="w-4 h-4 text-white" />
+                    <Trash2 className="w-5 h-5 text-white" />
                   </Button>
                 </div>
 

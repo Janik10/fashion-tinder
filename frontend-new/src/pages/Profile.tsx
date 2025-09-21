@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Edit, Heart, Bookmark, Users, TrendingUp, LogOut } from "lucide-react";
+import { Edit, Heart, Bookmark, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -34,10 +34,7 @@ export default function Profile() {
   // Calculate user stats from saved items
   const stats = {
     totalLikes: savedData?.items?.filter(item => item.action === 'like').length || 0,
-    totalSaves: savedData?.items?.filter(item => item.action === 'save').length || 0,
-    totalPasses: 0, // Would need to track passes separately
-    friendsCount: 0, // Would need friends system
-    voteSessionsJoined: 0 // Would need voting system
+    totalSaves: savedData?.items?.filter(item => item.action === 'save').length || 0
   };
 
   if (!isAuthenticated || !user) {
@@ -77,11 +74,12 @@ export default function Profile() {
               <Button
                 size="sm"
                 variant="outline"
-                className="rounded-full"
+                className="rounded-full text-xs sm:text-sm px-2 sm:px-3"
                 onClick={() => setShowEditProfile(true)}
               >
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Profile
+                <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Edit Profile</span>
+                <span className="sm:hidden">Edit</span>
               </Button>
             </div>
           </div>
@@ -104,18 +102,6 @@ export default function Profile() {
             value={stats.totalSaves}
             color="text-save"
           />
-          <StatCard
-            icon={Users}
-            label="Friends"
-            value={stats.friendsCount}
-            color="text-primary"
-          />
-          <StatCard
-            icon={TrendingUp}
-            label="Vote Sessions"
-            value={stats.voteSessionsJoined}
-            color="text-accent"
-          />
         </div>
       </div>
 
@@ -126,13 +112,13 @@ export default function Profile() {
 
           {savedData?.items && savedData.items.length > 0 ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
-                {savedData.items.slice(0, 6).map(({ item, savedAt, action }) => (
+              <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
+                {savedData.items.slice(0, 4).map(({ item, savedAt, action }) => (
                   <div key={`${item.id}-${action}`} className="relative group">
                     <img
                       src={item.imageUrl || item.image_url || "/api/placeholder/120/120"}
                       alt={item.name}
-                      className="w-full h-24 object-cover rounded-lg"
+                      className="w-full h-48 object-cover rounded-lg"
                     />
                     <div className="absolute top-1 right-1">
                       <Badge variant={action === 'like' ? 'destructive' : 'secondary'} className="text-xs px-1 py-0">

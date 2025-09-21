@@ -102,7 +102,7 @@ export const FashionCard = ({ item, onSwipe, style }: FashionCardProps) => {
   return (
     <div
       ref={cardRef}
-      className="swipe-card absolute w-[420px] h-[680px] bg-card rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing select-none"
+      className="swipe-card absolute w-[300px] h-[500px] sm:w-[420px] sm:h-[680px] bg-card rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing select-none"
       style={{
         ...style,
         transform: `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg)`,
