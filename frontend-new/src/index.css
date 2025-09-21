@@ -1,0 +1,221 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fashion Tinder Design System - Beautiful gradients and fashion-focused colors */
+
+@layer base {
+  :root {
+    /* Fashion-focused color palette */
+    --background: 340 15% 97%;
+    --foreground: 340 10% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 340 10% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 340 10% 15%;
+
+    /* Primary fashion brand colors - vibrant pink/purple gradient */
+    --primary: 320 85% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 300 80% 70%;
+
+    --secondary: 320 25% 95%;
+    --secondary-foreground: 320 15% 25%;
+
+    --muted: 320 15% 95%;
+    --muted-foreground: 320 10% 45%;
+
+    --accent: 280 100% 85%;
+    --accent-foreground: 280 15% 25%;
+
+    /* Action colors */
+    --like: 140 85% 55%;
+    --like-foreground: 0 0% 100%;
+    
+    --pass: 0 85% 60%;
+    --pass-foreground: 0 0% 100%;
+    
+    --save: 220 85% 60%;
+    --save-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 320 20% 88%;
+    --input: 320 20% 88%;
+    --ring: 320 85% 60%;
+
+    --radius: 1rem;
+    
+    /* Fashion gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-glass: linear-gradient(135deg, 
+      hsla(var(--card), 0.7), 
+      hsla(var(--card), 0.3)
+    );
+    --gradient-like: linear-gradient(135deg, 
+      hsl(var(--like)), 
+      hsl(150 85% 65%)
+    );
+    --gradient-pass: linear-gradient(135deg, 
+      hsl(var(--pass)), 
+      hsl(10 85% 65%)
+    );
+    --gradient-save: linear-gradient(135deg, 
+      hsl(var(--save)), 
+      hsl(240 85% 70%)
+    );
+    
+    /* Shadows with brand colors */
+    --shadow-card: 0 20px 40px -10px hsl(var(--primary) / 0.15);
+    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.3);
+    --shadow-action: 0 10px 30px -5px hsl(var(--primary) / 0.4);
+    
+    /* Animations */
+    --transition-smooth: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+  }
+
+  .dark {
+    /* Dark mode with fashion colors */
+    --background: 340 20% 8%;
+    --foreground: 340 15% 92%;
+
+    --card: 340 15% 12%;
+    --card-foreground: 340 15% 92%;
+
+    --popover: 340 15% 12%;
+    --popover-foreground: 340 15% 92%;
+
+    --primary: 320 85% 65%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 300 80% 75%;
+
+    --secondary: 320 20% 15%;
+    --secondary-foreground: 320 15% 85%;
+
+    --muted: 320 15% 15%;
+    --muted-foreground: 320 10% 65%;
+
+    --accent: 280 90% 75%;
+    --accent-foreground: 280 15% 15%;
+
+    --like: 140 80% 60%;
+    --pass: 0 80% 65%;
+    --save: 220 80% 65%;
+
+    --border: 320 20% 20%;
+    --input: 320 20% 20%;
+    --ring: 320 85% 65%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--background)) 100%);
+  }
+}
+
+@layer components {
+  /* Fashion Card Animations */
+  .swipe-card {
+    @apply relative transform-gpu transition-all duration-300 ease-out;
+    box-shadow: var(--shadow-card);
+  }
+  
+  .swipe-card:hover {
+    @apply scale-105;
+    box-shadow: var(--shadow-glow);
+  }
+  
+  /* Action Overlays */
+  .like-overlay {
+    background: var(--gradient-like);
+    @apply absolute inset-0 rounded-2xl flex items-center justify-center opacity-0 transition-opacity duration-300;
+  }
+  
+  .pass-overlay {
+    background: var(--gradient-pass);
+    @apply absolute inset-0 rounded-2xl flex items-center justify-center opacity-0 transition-opacity duration-300;
+  }
+  
+  .save-overlay {
+    background: var(--gradient-save);
+    @apply absolute inset-0 rounded-2xl flex items-center justify-center opacity-0 transition-opacity duration-300;
+  }
+  
+  /* Glassmorphism Effects */
+  .glass-card {
+    background: var(--gradient-glass);
+    @apply backdrop-blur-xl border border-white/20;
+  }
+  
+  /* Button Variants */
+  .btn-primary {
+    background: var(--gradient-primary);
+    @apply text-primary-foreground shadow-[var(--shadow-action)] hover:scale-105 transition-all duration-300;
+  }
+  
+  .btn-like {
+    background: var(--gradient-like);
+    @apply text-like-foreground shadow-lg hover:scale-110 transition-all duration-300;
+  }
+  
+  .btn-pass {
+    background: var(--gradient-pass);
+    @apply text-pass-foreground shadow-lg hover:scale-110 transition-all duration-300;
+  }
+  
+  .btn-save {
+    background: var(--gradient-save);
+    @apply text-save-foreground shadow-lg hover:scale-110 transition-all duration-300;
+  }
+  
+  /* Page Animations */
+  .page-enter {
+    @apply animate-in fade-in-0 slide-in-from-bottom-4 duration-500;
+  }
+  
+  .card-stack {
+    @apply relative;
+    perspective: 1000px;
+  }
+  
+  .card-stack .swipe-card:nth-child(1) { z-index: 30; }
+  .card-stack .swipe-card:nth-child(2) { z-index: 20; transform: scale(0.95) translateY(8px); }
+  .card-stack .swipe-card:nth-child(3) { z-index: 10; transform: scale(0.9) translateY(16px); }
+}
