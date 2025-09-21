@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 const navigation = [
   { name: 'Discover', href: '/', icon: Home },
   { name: 'Saved', href: '/saved', icon: Bookmark },
-  { name: 'Friends', href: '/friends', icon: Users },
   { name: 'Profile', href: '/profile', icon: User },
 ];
 
@@ -37,13 +36,6 @@ export const Navigation = () => {
         })}
       </div>
       
-      {/* Floating Action Button for Vote Sessions */}
-      <Link
-        to="/vote/create"
-        className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-12 h-12 btn-primary rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all duration-300"
-      >
-        <Plus className="w-6 h-6" />
-      </Link>
     </nav>
   );
 };

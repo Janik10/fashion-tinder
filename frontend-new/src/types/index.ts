@@ -50,7 +50,7 @@ export interface RegisterRequest {
   email: string;
   username: string;
   password: string;
-  preferences: UserPreferences;
+  preferences?: UserPreferences;
 }
 
 export interface FeedResponse {

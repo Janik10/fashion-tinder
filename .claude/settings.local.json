@@ -16,7 +16,18 @@
       "Bash(cp:*)",
       "Bash(npm run dev:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(mysql:*)",
+      "Bash(npm start)",
+      "Bash(node server-dev.js)",
+      "Bash(npm run:*)",
+      "Bash(node:*)",
+      "Bash(net start:*)",
+      "Bash(findstr:*)",
+      "Bash(sc query:*)",
+      "Bash(netstat:*)",
+      "Bash(set PORT=5001)",
+      "Bash(tree:*)"
     ],
     "deny": []
   }

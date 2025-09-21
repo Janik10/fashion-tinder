@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { FashionCard } from "@/components/FashionCard";
+import { FilterModal } from "@/components/FilterModal";
+import { PreferencesInsight } from "@/components/PreferencesInsight";
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Heart, X, Bookmark, Filter, Sparkles } from "lucide-react";
@@ -7,6 +9,7 @@ import { toast } from "sonner";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
+import { recommendationEngine } from "@/services/recommendationEngine";
 import type { FashionItem } from "@/types";
 
 // Import fashion images as fallbacks
@@ -71,21 +74,58 @@ const fallbackItems = [
 ];
 
 // Convert backend item to frontend format
-const formatItem = (item: FashionItem) => ({
-  id: item.id,
-  name: item.name,
-  brand: item.brand,
-  price: typeof item.price === 'string' ? parseInt(item.price) : item.price,
-  imageUrl: item.images[0] || fallbackItems[Math.floor(Math.random() * fallbackItems.length)].imageUrl,
-  category: item.category || 'Fashion',
-  tags: item.tags,
-  colors: item.colors || ['#E8E8E8', '#F5F5F5', '#FFFFFF'],
-});
+const formatItem = (item: FashionItem) => {
+  // Generate more diverse colors based on item properties
+  const generateColors = () => {
+    const colorSets = [
+      ['#FF6B6B', '#4ECDC4', '#45B7D1'], // Pink, Teal, Blue
+      ['#8B4513', '#D2691E', '#A0522D'], // Browns
+      ['#000000', '#2C3E50', '#34495E'], // Dark colors
+      ['#E74C3C', '#C0392B', '#922B21'], // Reds
+      ['#3498DB', '#2980B9', '#1F618D'], // Blues
+      ['#9B59B6', '#8E44AD', '#7D3C98'], // Purples
+      ['#1ABC9C', '#16A085', '#138D75'], // Greens
+      ['#F39C12', '#E67E22', '#D35400'], // Oranges
+    ];
+
+    // Use item ID to consistently assign color set
+    const index = parseInt(item.id) || Math.floor(Math.random() * colorSets.length);
+    return colorSets[index % colorSets.length];
+  };
+
+  return {
+    id: item.id,
+    name: item.name,
+    brand: item.brand,
+    price: typeof item.price === 'string' ? parseFloat(item.price) || 0 : (item.price || 0),
+    imageUrl: item.imageUrl || item.image_url || fallbackItems[Math.floor(Math.random() * fallbackItems.length)].imageUrl,
+    category: item.category || 'Fashion',
+    tags: item.tags || [],
+    colors: item.colors && item.colors.length > 0 ? item.colors : generateColors(),
+  };
+};
+
+interface FilterOptions {
+  categories: string[];
+  brands: string[];
+  priceRange: [number, number];
+  colors: string[];
+  tags: string[];
+}
 
 export default function Home() {
   const { isAuthenticated, initializeAuth } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [recommendedItems, setRecommendedItems] = useState<FashionItem[]>([]);
+  const [activeFilters, setActiveFilters] = useState<FilterOptions>({
+    categories: [],
+    brands: [],
+    priceRange: [0, 500],
+    colors: [],
+    tags: []
+  });
 
   // Initialize auth on mount if token exists
   useEffect(() => {
@@ -106,6 +146,18 @@ export default function Home() {
     }
   });
 
+  // Initialize recommended items when data changes
+  useEffect(() => {
+    const backendItems = feedData?.items ? feedData.items.map(formatItem) : [];
+    const rawItems = backendItems.length > 0 ? backendItems : fallbackItems;
+
+    // Only update recommended items if we don't have any or if this is a fresh load
+    if (recommendedItems.length === 0 || currentIndex === 0) {
+      const recommended = recommendationEngine.recommendItems(rawItems);
+      setRecommendedItems(recommended);
+    }
+  }, [feedData, recommendedItems.length, currentIndex]);
+
   // Create mutations for backend actions (optional - fallback to local only)
   const likeMutation = useMutation({
     mutationFn: (itemId: string) => apiClient.likeItem(itemId),
@@ -122,15 +174,49 @@ export default function Home() {
     onError: () => {}
   });
 
-  // Use backend data if available, otherwise fallback to local data
-  const backendItems = feedData?.items ? feedData.items.map(formatItem) : [];
-  const currentItems = backendItems.length > 0 ? backendItems : fallbackItems;
+  // Use cached recommended items to prevent re-sorting during swipes
+  const allItems = recommendedItems;
+
+  // Apply filters to items
+  const filteredItems = allItems.filter(item => {
+    // Category filter
+    if (activeFilters.categories.length > 0 && !activeFilters.categories.includes(item.category)) {
+      return false;
+    }
+
+    // Brand filter
+    if (activeFilters.brands.length > 0 && !activeFilters.brands.includes(item.brand)) {
+      return false;
+    }
+
+    // Price filter
+    if (item.price < activeFilters.priceRange[0] || item.price > activeFilters.priceRange[1]) {
+      return false;
+    }
+
+    // Tags filter
+    if (activeFilters.tags.length > 0 && !activeFilters.tags.some(tag => item.tags.includes(tag))) {
+      return false;
+    }
+
+    // Colors filter (check if any item color matches selected colors)
+    if (activeFilters.colors.length > 0 && !activeFilters.colors.some(color => item.colors.includes(color))) {
+      return false;
+    }
+
+    return true;
+  });
+
+  const currentItems = filteredItems;
 
   const handleSwipe = async (direction: 'like' | 'pass' | 'save') => {
     const currentItem = currentItems[currentIndex];
-    
+
+    // Record user interaction for recommendation engine
+    recommendationEngine.recordInteraction(currentItem, direction);
+
     // Try backend action if authenticated, but don't block UI
-    if (isAuthenticated && backendItems.length > 0) {
+    if (isAuthenticated && feedData?.items?.length > 0) {
       try {
         switch (direction) {
           case 'like':
@@ -147,7 +233,7 @@ export default function Home() {
         // Silently handle errors, don't break the UI
       }
     }
-    
+
     // Show toast feedback
     switch (direction) {
       case 'like':
@@ -170,7 +256,7 @@ export default function Home() {
     // Move to next item
     setTimeout(() => {
       setCurrentIndex(prev => prev + 1);
-      
+
       // Load more items when running low
       if (currentIndex >= currentItems.length - 2) {
         loadMoreItems();
@@ -180,15 +266,23 @@ export default function Home() {
 
   const loadMoreItems = () => {
     setIsLoading(true);
+
+    // Refresh recommendations with current preferences
+    const backendItems = feedData?.items ? feedData.items.map(formatItem) : [];
+    const rawItems = backendItems.length > 0 ? backendItems : fallbackItems;
+    const newRecommendations = recommendationEngine.recommendItems(rawItems);
+
     if (isAuthenticated && backendItems.length > 0) {
       // Try to fetch more from backend
       refetch().finally(() => {
+        setRecommendedItems(newRecommendations);
+        setCurrentIndex(0);
         setIsLoading(false);
       });
     } else {
-      // Simulate API call with fallback data
+      // Update recommendations with fallback data
       setTimeout(() => {
-        // Just reset to beginning for demo
+        setRecommendedItems(newRecommendations);
         setCurrentIndex(0);
         setIsLoading(false);
       }, 1000);
@@ -199,8 +293,21 @@ export default function Home() {
     handleSwipe(action);
   };
 
+  const handleApplyFilters = (filters: FilterOptions) => {
+    setActiveFilters(filters);
+    setCurrentIndex(0); // Reset to start with filtered items
+    toast.success("Filters applied!");
+  };
+
+  const hasActiveFilters = activeFilters.categories.length > 0 ||
+                          activeFilters.brands.length > 0 ||
+                          activeFilters.tags.length > 0 ||
+                          activeFilters.colors.length > 0 ||
+                          activeFilters.priceRange[0] > 0 ||
+                          activeFilters.priceRange[1] < 500;
+
   // Show auth prompt if not authenticated and no fallback data
-  if (!isAuthenticated && backendItems.length === 0 && currentIndex >= currentItems.length) {
+  if (!isAuthenticated && (!feedData?.items?.length) && currentIndex >= currentItems.length) {
     return (
       <div className="min-h-screen bg-background page-enter">
         <div className="flex flex-col items-center justify-center min-h-screen p-8">
@@ -234,25 +341,60 @@ export default function Home() {
 
   // Show empty state when no more items
   if (currentIndex >= currentItems.length && !isLoading) {
+    const hasFilters = hasActiveFilters;
+
     return (
       <div className="min-h-screen bg-background page-enter">
         <div className="flex flex-col items-center justify-center min-h-screen p-8">
           <Sparkles className="w-24 h-24 text-primary mb-6" />
           <h2 className="text-2xl font-bold text-center mb-4">
-            You've seen everything!
+            {hasFilters ? "No items match your filters!" : "You've seen everything!"}
           </h2>
           <p className="text-muted-foreground text-center mb-8 max-w-md">
-            Great taste! Check back later for new fashion items or browse your saved favorites.
+            {hasFilters
+              ? "Try adjusting your filters to discover more fashion items."
+              : "Great taste! Check back later for new fashion items or browse your saved favorites."
+            }
           </p>
-          <Button 
-            onClick={() => {
-              setCurrentIndex(0);
-              loadMoreItems();
-            }}
-            className="btn-primary"
-          >
-            Discover More
-          </Button>
+          <div className="flex gap-3">
+            {hasFilters && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setActiveFilters({
+                    categories: [],
+                    brands: [],
+                    priceRange: [0, 500],
+                    colors: [],
+                    tags: []
+                  });
+                  setCurrentIndex(0);
+                  toast.success("Filters cleared!");
+                }}
+                className="btn-secondary"
+              >
+                Clear Filters
+              </Button>
+            )}
+            <Button
+              onClick={() => {
+                if (hasFilters) {
+                  // Reset filters first
+                  setActiveFilters({
+                    categories: [],
+                    brands: [],
+                    priceRange: [0, 500],
+                    colors: [],
+                    tags: []
+                  });
+                }
+                loadMoreItems();
+              }}
+              className="btn-primary"
+            >
+              Discover More
+            </Button>
+          </div>
         </div>
         <Navigation />
       </div>
@@ -269,14 +411,22 @@ export default function Home() {
           </h1>
           <p className="text-muted-foreground text-sm">Swipe your style</p>
         </div>
-        <Button variant="outline" size="icon" className="rounded-full">
-          <Filter className="w-5 h-5" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <PreferencesInsight />
+          <Button
+            variant="outline"
+            size="icon"
+            className={`rounded-full ${hasActiveFilters ? 'bg-primary text-primary-foreground' : ''}`}
+            onClick={() => setShowFilters(true)}
+          >
+            <Filter className="w-5 h-5" />
+          </Button>
+        </div>
       </header>
 
       {/* Main Swipe Area */}
-      <div className="flex-1 flex items-center justify-center px-6 pb-32">
-        <div className="relative w-80 h-[500px] card-stack">
+      <div className="flex-1 flex items-center justify-center px-4 pb-32">
+        <div className="relative w-[420px] h-[680px] card-stack">
           {/* Show next 3 cards */}
           {currentItems.slice(currentIndex, currentIndex + 3).map((item, index) => (
             <FashionCard
@@ -331,6 +481,14 @@ export default function Home() {
       </div>
 
       <Navigation />
+
+      {/* Filter Modal */}
+      <FilterModal
+        isOpen={showFilters}
+        onClose={() => setShowFilters(false)}
+        onApplyFilters={handleApplyFilters}
+        currentFilters={activeFilters}
+      />
     </div>
   );
 }

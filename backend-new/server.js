@@ -6,9 +6,10 @@ const compression = require('compression');
 require('dotenv').config();
 
 const { testConnection } = require('./config/database');
+const dataLoader = require('./data-loader');
 
 // Import routes
-const authRoutes = require('./routes/auth');
+const authRoutes = require('./routes/auth-simple');
 const itemsRoutes = require('./routes/items');
 
 // Create Express app
@@ -45,38 +46,14 @@ const limiter = rateLimit({
     legacyHeaders: false,
 });
 
-// More strict rate limiting for auth endpoints
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // limit each IP to 5 auth requests per windowMs
-    message: {
-        success: false,
-        message: 'Too many authentication attempts, please try again later.'
-    },
-    skipSuccessfulRequests: true,
-});
+// Auth rate limiting disabled for development
+const authLimiter = (req, res, next) => next();
 
 app.use(limiter);
 
 // CORS configuration
 const corsOptions = {
-    origin: function (origin, callback) {
-        const allowedOrigins = [
-            process.env.FRONTEND_URL,
-            'http://localhost:3000',
-            'http://localhost:8080',
-            'http://localhost:5173'
-        ].filter(Boolean);
-        
-        // Allow requests with no origin (mobile apps, etc.)
-        if (!origin) return callback(null, true);
-        
-        if (allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: true, // Allow all origins in development
     credentials: true,
     optionsSuccessStatus: 200
 };
@@ -191,13 +168,22 @@ process.on('SIGTERM', () => {
 // Start server
 async function startServer() {
     try {
-        // Test database connection
+        // Load CSV data into memory
+        console.log('📊 Loading fashion data...');
+        const dataLoaded = await dataLoader.loadAllData();
+        if (!dataLoaded) {
+            console.error('⚠️  Failed to load fashion data, continuing with empty dataset...');
+        } else {
+            console.log(`✅ Fashion data loaded: ${dataLoader.getTotalItems()} items`);
+        }
+
+        // Test database connection (optional for now)
+        console.log('🔍 Testing database connection...');
         const dbConnected = await testConnection();
         if (!dbConnected) {
-            console.error('❌ Failed to connect to database. Exiting...');
-            process.exit(1);
+            console.log('⚠️  Database not connected, using in-memory data only');
         }
-        
+
         // Start listening
         app.listen(PORT, () => {
             console.log(`\n🚀 Fashion Tinder API Server running!`);
@@ -210,7 +196,7 @@ async function startServer() {
             console.log(`   Items: http://localhost:${PORT}/api/items`);
             console.log(`\n⚡ Ready to serve fashion recommendations!\n`);
         });
-        
+
     } catch (error) {
         console.error('❌ Failed to start server:', error);
         process.exit(1);

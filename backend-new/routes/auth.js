@@ -1,7 +1,11 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
-const { query, queryOne, transaction } = require('../config/database');
+// const { query, queryOne, transaction } = require('../config/database');
+
+// In-memory user storage (for testing)
+const users = new Map();
+let nextUserId = 1;
 const { generateToken, authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
@@ -41,13 +45,9 @@ router.post('/register', registerValidation, async (req, res) => {
         const { username, email, password } = req.body;
 
         // Check if user already exists
-        const existingUser = await queryOne(
-            'SELECT id FROM users WHERE email = ? OR username = ?',
-            [email, username]
-        );
-
-        if (existingUser) {
-            return res.status(409).json({
+        for (const [id, user] of users) {
+            if (user.email === email || user.username === username) {
+                return res.status(409).json({
                 success: false,
                 message: 'User with this email or username already exists'
             });
@@ -57,41 +57,38 @@ router.post('/register', registerValidation, async (req, res) => {
         const saltRounds = 12;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // Create user in transaction
-        const result = await transaction(async (connection) => {
-            // Insert user
-            const [userResult] = await connection.execute(
-                'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
-                [username, email, hashedPassword]
-            );
+        // Create user in memory
+        const userId = nextUserId++;
+        const newUser = {
+            id: userId,
+            username,
+            email,
+            password: hashedPassword,
+            created_at: new Date(),
+            preferences: {
+                style: null,
+                size: null,
+                brands: []
+            }
+        };
 
-            const userId = userResult.insertId;
-
-            // Create default preferences
-            await connection.execute(
-                `INSERT INTO user_preferences 
-                (user_id, preferred_categories, preferred_brands, preferred_colors) 
-                VALUES (?, '[]', '[]', '[]')`,
-                [userId]
-            );
-
-            return userId;
-        });
+        users.set(userId, newUser);
 
         // Generate JWT token
-        const token = generateToken(result);
+        const token = generateToken({
+            id: userId,
+            email,
+            username
+        });
 
-        // Get created user (without password)
-        const newUser = await queryOne(
-            'SELECT id, username, email, created_at FROM users WHERE id = ?',
-            [result]
-        );
+        // Return user data (without password)
+        const { password: _, ...userWithoutPassword } = newUser;
 
         res.status(201).json({
             success: true,
             message: 'User registered successfully',
             data: {
-                user: newUser,
+                user: userWithoutPassword,
                 token
             }
         });
@@ -236,3 +233,4 @@ router.post('/logout', authenticateToken, (req, res) => {
 });
 
 module.exports = router;
+module.exports.users = users;

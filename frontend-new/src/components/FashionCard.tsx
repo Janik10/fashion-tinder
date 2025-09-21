@@ -102,7 +102,7 @@ export const FashionCard = ({ item, onSwipe, style }: FashionCardProps) => {
   return (
     <div
       ref={cardRef}
-      className="swipe-card absolute w-80 h-[500px] bg-card rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing select-none"
+      className="swipe-card absolute w-[420px] h-[680px] bg-card rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing select-none"
       style={{
         ...style,
         transform: `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg)`,
@@ -179,7 +179,11 @@ export const FashionCard = ({ item, onSwipe, style }: FashionCardProps) => {
         
         <h3 className="text-2xl font-bold mb-1">{item.name}</h3>
         <p className="text-lg font-medium mb-2">{item.brand}</p>
-        <p className="text-3xl font-bold mb-3">${item.price}</p>
+        {item.price > 0 ? (
+          <p className="text-3xl font-bold mb-3">${item.price}</p>
+        ) : (
+          <p className="text-lg font-medium mb-3 text-white/80">Price not available</p>
+        )}
         
         <div className="flex flex-wrap gap-2 mb-3">
           {item.tags.slice(0, 3).map((tag, index) => (

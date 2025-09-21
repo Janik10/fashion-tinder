@@ -39,13 +39,6 @@ export default function Register() {
         email,
         username,
         password,
-        preferences: {
-          favoriteColors: [],
-          favoriteBrands: [],
-          preferredCategories: [],
-          budgetRange: { min: 0, max: 1000 },
-          sizes: [],
-        },
       });
       toast.success("Account created successfully! Welcome to Fashion Tinder!");
       navigate("/");

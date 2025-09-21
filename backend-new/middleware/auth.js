@@ -1,5 +1,16 @@
 const jwt = require('jsonwebtoken');
-const { queryOne } = require('../config/database');
+// const { queryOne } = require('../config/database');
+
+// Access to in-memory users from auth routes
+let users;
+const getUsersMap = () => {
+    if (!users) {
+        // Import the users map from auth-simple route
+        const authModule = require('../routes/auth-simple');
+        users = authModule.users || new Map();
+    }
+    return users;
+};
 
 // JWT Authentication middleware
 const authenticateToken = async (req, res, next) => {
@@ -16,22 +27,28 @@ const authenticateToken = async (req, res, next) => {
 
         // Verify JWT token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        
-        // Get user from database
-        const user = await queryOne(
-            'SELECT id, username, email, created_at FROM users WHERE id = ?',
-            [decoded.userId]
-        );
+
+        // Get user from memory - handle different token structures
+        let userId;
+        if (decoded.userId && typeof decoded.userId === 'object') {
+            userId = decoded.userId.id; // New token format
+        } else {
+            userId = decoded.userId; // Old token format
+        }
+
+        const usersMap = getUsersMap();
+        const user = usersMap.get(userId);
 
         if (!user) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Invalid token - user not found' 
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid token - user not found'
             });
         }
 
-        // Add user to request object
-        req.user = user;
+        // Add user to request object (without password)
+        const { password: _, ...userWithoutPassword } = user;
+        req.user = userWithoutPassword;
         next();
     } catch (error) {
         if (error.name === 'JsonWebTokenError') {

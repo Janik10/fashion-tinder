@@ -2,11 +2,12 @@ import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Share2, ShoppingBag, X } from "lucide-react";
+import { Share2, Bookmark, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
 
 // Import fashion images as fallbacks
 import fashion1 from "@/assets/fashion-1.jpg";
@@ -54,10 +55,12 @@ const fallbackSavedItems = [
   }
 ];
 
-const categories = ["All", "Outerwear", "Dresses", "Shoes", "Accessories"];
+const categories = ["All", "Sports Bras", "Crop Tops", "Leggings", "Shorts", "Hoodies", "Yoga Wear", "Swimwear", "Fashion", "Athletic Wear"];
 
 export default function Saved() {
   const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   // Fetch saved items from backend or use fallback
   const { data: savedData } = useQuery({
@@ -67,25 +70,69 @@ export default function Saved() {
     retry: false,
   });
 
-  // Format backend saved items or use fallback
-  const backendSavedItems = savedData?.items ? savedData.items.map(({ item, savedAt }) => ({
-    id: item.id,
-    name: item.name,
-    brand: item.brand,
-    price: typeof item.price === 'string' ? parseInt(item.price) : item.price,
-    imageUrl: item.images[0] || fallbackSavedItems[Math.floor(Math.random() * fallbackSavedItems.length)].imageUrl,
-    category: item.category || 'Fashion',
-    savedAt: new Date(savedAt).toISOString().split('T')[0]
-  })) : [];
+  // Format backend saved items
+  const savedItems = savedData?.items ? savedData.items.map(({ item, savedAt }) => {
+    // Generate diverse colors for saved items too
+    const generateColors = () => {
+      const colorSets = [
+        ['#FF6B6B', '#4ECDC4', '#45B7D1'], // Pink, Teal, Blue
+        ['#8B4513', '#D2691E', '#A0522D'], // Browns
+        ['#000000', '#2C3E50', '#34495E'], // Dark colors
+        ['#E74C3C', '#C0392B', '#922B21'], // Reds
+        ['#3498DB', '#2980B9', '#1F618D'], // Blues
+        ['#9B59B6', '#8E44AD', '#7D3C98'], // Purples
+        ['#1ABC9C', '#16A085', '#138D75'], // Greens
+        ['#F39C12', '#E67E22', '#D35400'], // Oranges
+      ];
+      const index = parseInt(item.id) || Math.floor(Math.random() * colorSets.length);
+      return colorSets[index % colorSets.length];
+    };
 
-  const savedItems = backendSavedItems.length > 0 ? backendSavedItems : fallbackSavedItems;
+    return {
+      id: item.id,
+      name: item.name,
+      brand: item.brand,
+      price: typeof item.price === 'string' ? parseFloat(item.price) || 0 : (item.price || 0),
+      imageUrl: item.imageUrl || item.image_url || fallbackSavedItems[Math.floor(Math.random() * fallbackSavedItems.length)].imageUrl,
+      category: item.category || 'Fashion',
+      colors: item.colors && item.colors.length > 0 ? item.colors : generateColors(),
+      savedAt: new Date(savedAt).toISOString().split('T')[0]
+    };
+  }) : fallbackSavedItems;
+
+  // Filter items by selected category
+  const filteredItems = selectedCategory === "All"
+    ? savedItems
+    : savedItems.filter(item => item.category === selectedCategory);
+
+  // Mutations for actions
+  const removeMutation = useMutation({
+    mutationFn: (itemId: string) => apiClient.unsaveItem(itemId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saves'] });
+    },
+    onError: () => {} // Silently fail, keep UI working
+  });
 
   const handleRemoveItem = (itemId: string, itemName: string) => {
+    if (isAuthenticated) {
+      removeMutation.mutate(itemId);
+    }
     toast.success(`Removed ${itemName} from saved items`);
   };
 
   const handleShareItem = (itemName: string) => {
-    toast.success(`Shared ${itemName}!`);
+    // Simple share functionality - could be enhanced with actual sharing
+    if (navigator.share) {
+      navigator.share({
+        title: `Check out this fashion item: ${itemName}`,
+        text: `I found this amazing piece on Fashion Tinder: ${itemName}`,
+      });
+    } else {
+      // Fallback - copy to clipboard
+      navigator.clipboard.writeText(`Check out this fashion item: ${itemName}`);
+      toast.success(`${itemName} link copied to clipboard!`);
+    }
   };
 
   return (
@@ -102,8 +149,9 @@ export default function Saved() {
           {categories.map((category) => (
             <Badge
               key={category}
-              variant={category === "All" ? "default" : "secondary"}
+              variant={category === selectedCategory ? "default" : "secondary"}
               className="whitespace-nowrap cursor-pointer hover:scale-105 transition-transform"
+              onClick={() => setSelectedCategory(category)}
             >
               {category}
             </Badge>
@@ -114,7 +162,7 @@ export default function Saved() {
       {/* Items Grid */}
       <div className="px-6">
         <div className="grid grid-cols-2 gap-4">
-          {savedItems.map((item) => (
+          {filteredItems.map((item) => (
             <Card key={item.id} className="overflow-hidden group hover:shadow-lg transition-all duration-300">
               <div className="relative">
                 <img 
@@ -137,8 +185,9 @@ export default function Saved() {
                     size="sm"
                     variant="secondary"
                     className="rounded-full w-10 h-10 p-0 bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                    onClick={() => toast.success(`Kept ${item.name} in saved items!`)}
                   >
-                    <ShoppingBag className="w-4 h-4 text-white" />
+                    <Bookmark className="w-4 h-4 text-white" />
                   </Button>
                   <Button
                     size="sm"
@@ -146,7 +195,7 @@ export default function Saved() {
                     className="rounded-full w-10 h-10 p-0 bg-white/20 backdrop-blur-sm hover:bg-white/30"
                     onClick={() => handleRemoveItem(item.id, item.name)}
                   >
-                    <X className="w-4 h-4 text-white" />
+                    <Trash2 className="w-4 h-4 text-white" />
                   </Button>
                 </div>
 
@@ -154,15 +203,6 @@ export default function Saved() {
                 <Badge className="absolute top-2 left-2 bg-black/50 text-white">
                   {item.category}
                 </Badge>
-
-                {/* Like Button */}
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="absolute top-2 right-2 rounded-full w-8 h-8 p-0 bg-white/20 backdrop-blur-sm"
-                >
-                  <Heart className="w-4 h-4 text-white" />
-                </Button>
               </div>
               
               <div className="p-4">
@@ -175,13 +215,27 @@ export default function Saved() {
         </div>
 
         {/* Empty State */}
-        {savedItems.length === 0 && (
+        {filteredItems.length === 0 && (
           <div className="text-center py-12">
-            <ShoppingBag className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No saved items yet</h3>
+            <Bookmark className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">
+              {selectedCategory === "All" ? "No saved items yet" : `No ${selectedCategory} items saved`}
+            </h3>
             <p className="text-muted-foreground mb-6">
-              Start swiping and save items you love!
+              {selectedCategory === "All"
+                ? "Start swiping and save items you love!"
+                : `Try browsing other categories or save some ${selectedCategory} items.`
+              }
             </p>
+            {selectedCategory !== "All" && (
+              <Button
+                variant="outline"
+                onClick={() => setSelectedCategory("All")}
+                className="mr-3"
+              >
+                View All Items
+              </Button>
+            )}
             <Button className="btn-primary">
               Discover Fashion
             </Button>

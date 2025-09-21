@@ -62,29 +62,48 @@ class ApiClient {
       throw new Error(errorData.message || 'Request failed');
     }
 
-    return response.json();
+    const data = await response.json();
+    
+    // New backend returns data in a specific format: { success: boolean, data: T, message?: string }
+    if (data.success === false) {
+      throw new Error(data.message || 'Request failed');
+    }
+    
+    // Return the data field if it exists, otherwise return the whole response
+    return data.data || data;
   }
 
   // Auth endpoints
   async login(data: LoginRequest): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>(API_ENDPOINTS.LOGIN, {
+    const response = await this.request<{user: User, token: string}>(API_ENDPOINTS.LOGIN, {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    this.setToken(response.accessToken);
-    return response;
+    this.setToken(response.token);
+    return {
+      user: response.user,
+      accessToken: response.token
+    };
   }
 
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>(API_ENDPOINTS.REGISTER, {
+    const response = await this.request<{user: User, token: string}>(API_ENDPOINTS.REGISTER, {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    this.setToken(response.accessToken);
-    return response;
+    this.setToken(response.token);
+    return {
+      user: response.user,
+      accessToken: response.token
+    };
   }
 
   async logout() {
+    try {
+      await this.request(API_ENDPOINTS.LOGOUT, { method: 'POST' });
+    } catch (error) {
+      // Logout on client side even if server call fails
+    }
     this.setToken(null);
   }
 
@@ -104,7 +123,12 @@ class ApiClient {
     const queryString = searchParams.toString();
     const endpoint = queryString ? `${API_ENDPOINTS.FEED}?${queryString}` : API_ENDPOINTS.FEED;
 
-    return this.request<FeedResponse>(endpoint);
+    const response = await this.request<{items: FashionItem[], count: number}>(endpoint);
+    return {
+      items: response.items,
+      hasMore: response.items.length === (params.limit || 10),
+      nextCursor: undefined
+    };
   }
 
   async getItem(id: string): Promise<FashionItem> {
@@ -113,20 +137,23 @@ class ApiClient {
 
   // Interactions
   async likeItem(itemId: string): Promise<{ success: boolean }> {
-    return this.request<{ success: boolean }>(`${API_ENDPOINTS.LIKE}/${itemId}`, {
+    return this.request<{ success: boolean }>(API_ENDPOINTS.LIKE, {
       method: 'POST',
+      body: JSON.stringify({ itemId }),
     });
   }
 
   async passItem(itemId: string): Promise<{ success: boolean }> {
-    return this.request<{ success: boolean }>(`${API_ENDPOINTS.PASS}/${itemId}`, {
+    return this.request<{ success: boolean }>(API_ENDPOINTS.PASS, {
       method: 'POST',
+      body: JSON.stringify({ itemId }),
     });
   }
 
   async saveItem(itemId: string): Promise<{ success: boolean }> {
-    return this.request<{ success: boolean }>(`${API_ENDPOINTS.SAVE}/${itemId}`, {
+    return this.request<{ success: boolean }>(API_ENDPOINTS.SAVE, {
       method: 'POST',
+      body: JSON.stringify({ itemId }),
     });
   }
 
@@ -144,7 +171,8 @@ class ApiClient {
 
   // User endpoints
   async getMe(): Promise<User> {
-    return this.request<User>(API_ENDPOINTS.ME);
+    const response = await this.request<{user: User}>(API_ENDPOINTS.ME);
+    return response.user || response;
   }
 
   async updateProfile(data: Partial<User>): Promise<User> {
