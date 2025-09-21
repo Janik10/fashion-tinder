@@ -7,8 +7,10 @@ import {
   UseGuards,
   Query,
   ParseUUIDPipe,
+  Request,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ItemsService } from './items.service';
 import { FeedQueryDto, ImportItemsDto } from './dto/items.dto';
 
@@ -18,8 +20,8 @@ export class ItemsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('feed')
-  getFeed(@Query() query: FeedQueryDto) {
-    return this.itemsService.getFeed(query);
+  getFeed(@Query() query: FeedQueryDto, @CurrentUser() user: any) {
+    return this.itemsService.getFeed(query, user.id);
   }
 
   @UseGuards(JwtAuthGuard)

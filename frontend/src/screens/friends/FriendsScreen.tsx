@@ -17,7 +17,18 @@ interface Friend {
   username: string;
   name: string;
   avatar?: string;
+  compatibility?: {
+    score: number;
+    sharedLikes: string[];
+  };
 }
+
+const getCompatibilityColor = (score: number): string => {
+  if (score >= 80) return '#4CD964'; // Green
+  if (score >= 60) return '#FF9500'; // Orange
+  if (score >= 40) return '#FFCC00'; // Yellow
+  return '#FF3B30'; // Red
+};
 
 export default function FriendsScreen() {
   const [friends, setFriends] = useState([] as Friend[]);
@@ -33,10 +44,26 @@ export default function FriendsScreen() {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(`${API_URL}/api/friends`, {
+      const response = await axios.get(`${API_URL}/friends`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setFriends(response.data);
+      
+      // Load compatibility for each friend
+      const friendsWithCompatibility = await Promise.all(
+        response.data.map(async (friend: Friend) => {
+          try {
+            const compatResponse = await axios.get(
+              `${API_URL}/api/friends/compatibility/${friend.id}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            return { ...friend, compatibility: compatResponse.data };
+          } catch (error) {
+            return friend; // Return friend without compatibility if API fails
+          }
+        })
+      );
+      
+      setFriends(friendsWithCompatibility);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to load friends');
     } finally {
@@ -117,6 +144,23 @@ export default function FriendsScreen() {
             <View style={styles.friendInfo}>
               <Text style={styles.friendName}>{item.name}</Text>
               <Text style={styles.friendUsername}>@{item.username}</Text>
+              {item.compatibility && (
+                <View style={styles.compatibilityContainer}>
+                  <View style={[
+                    styles.compatibilityBadge,
+                    { backgroundColor: getCompatibilityColor(item.compatibility.score) }
+                  ]}>
+                    <Text style={styles.compatibilityText}>
+                      {item.compatibility.score}% compatible
+                    </Text>
+                  </View>
+                  {item.compatibility.sharedLikes.length > 0 && (
+                    <Text style={styles.sharedLikes}>
+                      {item.compatibility.sharedLikes.length} shared likes
+                    </Text>
+                  )}
+                </View>
+              )}
             </View>
             <TouchableOpacity
               style={styles.actionButton}
@@ -223,5 +267,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
+  },
+  compatibilityContainer: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  compatibilityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 8,
+    marginBottom: 4,
+  },
+  compatibilityText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  sharedLikes: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
   },
 });

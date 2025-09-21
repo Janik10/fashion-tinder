@@ -11,7 +11,7 @@ import { InteractionsService } from './interactions.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { InteractionParamDto, UserIdDto } from './dto/interactions.dto';
 
-@Controller('interactions')
+@Controller()
 export class InteractionsController {
   constructor(private readonly interactionsService: InteractionsService) {}
 
@@ -43,13 +43,13 @@ export class InteractionsController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('likes')
+  @Get('me/likes')
   getLikes(@CurrentUser() user: UserIdDto) {
     return this.interactionsService.getUserLikes(user.id);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('saves')
+  @Get('me/saves')
   getSaves(@CurrentUser() user: UserIdDto) {
     return this.interactionsService.getUserSaves(user.id);
   }

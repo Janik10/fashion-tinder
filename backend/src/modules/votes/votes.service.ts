@@ -32,9 +32,6 @@ export class VotesService {
   async joinSession(code: string) {
     const session = await this.prisma.voteSession.findUnique({
       where: { code },
-      include: {
-        votes: true,
-      },
     });
 
     if (!session) {
@@ -42,6 +39,52 @@ export class VotesService {
     }
 
     return session;
+  }
+
+  async getUserSessions(userId: string) {
+    const sessions = await this.prisma.voteSession.findMany({
+      where: { hostId: userId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return sessions.map(session => ({
+      id: session.id,
+      name: `Vote Session ${session.code}`,
+      description: '',
+      createdAt: session.createdAt,
+      participants: [],
+      items: [],
+      status: 'active',
+      creatorId: session.hostId,
+    }));
+  }
+
+  async getSession(sessionId: string) {
+    const session = await this.prisma.voteSession.findUnique({
+      where: { id: sessionId },
+    });
+
+    if (!session) {
+      throw new NotFoundException('Vote session not found');
+    }
+
+    // Get items for this session
+    const items = await this.prisma.item.findMany({
+      where: {
+        id: { in: session.itemIds },
+      },
+    });
+
+    return {
+      id: session.id,
+      name: `Vote Session ${session.code}`,
+      description: '',
+      createdAt: session.createdAt,
+      participants: [],
+      items: items,
+      status: 'active',
+      creatorId: session.hostId,
+    };
   }
 
   async castVote(sessionId: string, userId: string, itemId: string, value: number) {
@@ -58,19 +101,20 @@ export class VotesService {
   async getSessionResults(sessionId: string) {
     const session = await this.prisma.voteSession.findUnique({
       where: { id: sessionId },
-      include: {
-        votes: true,
-      },
     });
 
     if (!session) {
       throw new NotFoundException('Vote session not found');
     }
 
+    const votes = await this.prisma.vote.findMany({
+      where: { sessionId },
+    });
+
     const itemResults = session.itemIds.map(itemId => {
-      const votes = session.votes.filter(v => v.itemId === itemId);
-      const likes = votes.filter(v => v.value === 1).length;
-      const passes = votes.filter(v => v.value === 0).length;
+      const itemVotes = votes.filter(v => v.itemId === itemId);
+      const likes = itemVotes.filter(v => v.value === 1).length;
+      const passes = itemVotes.filter(v => v.value === 0).length;
       return { itemId, likes, passes };
     });
 

@@ -1,12 +1,22 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { RecommendationsService } from '../recommendations/recommendations.service';
 import { FeedQueryDto, ItemDto } from './dto/items.dto';
 
 @Injectable()
 export class ItemsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private recommendationsService: RecommendationsService,
+  ) {}
 
-  async getFeed(query: FeedQueryDto, take: number = 20) {
+  async getFeed(query: FeedQueryDto, userId?: string, take: number = 20) {
+    if (userId) {
+      // Use recommendation system for personalized feed
+      return this.recommendationsService.getRecommendedFeed(userId, take, query.cursor);
+    }
+
+    // Fallback to chronological feed for non-authenticated users
     const { cursor, gender, season } = query;
     
     const items = await this.prisma.item.findMany({

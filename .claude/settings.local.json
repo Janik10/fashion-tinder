@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run start:dev:*)",
+      "Bash(npm install:*)",
+      "Bash(find:*)",
+      "Bash(curl:*)",
+      "Bash(pg_isready:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npx prisma db seed:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(git clone:*)",
+      "Bash(mv:*)",
+      "Bash(cp:*)",
+      "Bash(npm run dev:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git restore:*)"
+    ],
+    "deny": []
+  }
+}

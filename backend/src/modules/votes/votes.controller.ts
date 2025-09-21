@@ -15,7 +15,7 @@ export class VotesController {
   constructor(private readonly votesService: VotesService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Post('session')
+  @Post('sessions')
   createSession(
     @CurrentUser() user: any,
     @Body('itemIds') itemIds?: string[],
@@ -24,23 +24,36 @@ export class VotesController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('join')
-  joinSession(@Body('code') code: string) {
-    return this.votesService.joinSession(code);
+  @Get('sessions')
+  getSessions(@CurrentUser() user: any) {
+    return this.votesService.getUserSessions(user.id);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('cast')
+  @Get('sessions/:sessionId')
+  getSession(@Param('sessionId') sessionId: string) {
+    return this.votesService.getSession(sessionId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('sessions/:sessionId/vote')
   castVote(
     @CurrentUser() user: any,
-    @Body() vote: { sessionId: string; itemId: string; value: number },
+    @Param('sessionId') sessionId: string,
+    @Body() vote: { itemId: string; vote: boolean },
   ) {
     return this.votesService.castVote(
-      vote.sessionId,
+      sessionId,
       user.id,
       vote.itemId,
-      vote.value,
+      vote.vote ? 1 : 0,
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('join')
+  joinSession(@Body('code') code: string) {
+    return this.votesService.joinSession(code);
   }
 
   @UseGuards(JwtAuthGuard)

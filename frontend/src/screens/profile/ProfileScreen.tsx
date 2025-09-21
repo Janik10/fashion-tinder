@@ -39,7 +39,7 @@ export default function ProfileScreen() {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(`${API_URL}/api/users/me`, {
+      const response = await axios.get(`${API_URL}/users/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setProfile(response.data);

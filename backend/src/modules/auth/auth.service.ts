@@ -52,6 +52,10 @@ export class AuthService {
     });
 
     const { passwordHash, ...result } = user;
-    return result;
+    const payload = { email: user.email, sub: user.id };
+    return {
+      accessToken: this.jwtService.sign(payload),
+      user: result,
+    };
   }
 }

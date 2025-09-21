@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { RecommendationsService } from '../recommendations/recommendations.service';
 
 @Injectable()
 export class FriendsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private recommendationsService: RecommendationsService,
+  ) {}
 
   async requestFriendship(userAId: string, username: string) {
     const userB = await this.prisma.user.findUnique({
@@ -93,29 +97,6 @@ export class FriendsService {
   }
 
   async getCompatibility(userId: string, friendId: string) {
-    const [userLikes, friendLikes] = await Promise.all([
-      this.prisma.like.findMany({
-        where: { userId },
-        select: { itemId: true },
-      }),
-      this.prisma.like.findMany({
-        where: { userId: friendId },
-        select: { itemId: true },
-      }),
-    ]);
-
-    const userItemIds = new Set(userLikes.map((l) => l.itemId));
-    const friendItemIds = new Set(friendLikes.map((l) => l.itemId));
-    const sharedLikes = [...userItemIds].filter((id) => friendItemIds.has(id));
-
-    // Simple compatibility score based on shared likes
-    const score = userItemIds.size && friendItemIds.size
-      ? (sharedLikes.length * 100) / Math.min(userItemIds.size, friendItemIds.size)
-      : 0;
-
-    return {
-      score: Math.round(score),
-      sharedLikes,
-    };
+    return this.recommendationsService.getCompatibilityScore(userId, friendId);
   }
 }

@@ -61,7 +61,7 @@ export const useVotesStore = create<VotesState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       const { token } = useAuthStore.getState();
-      const response = await axios.get(`${API_URL}/api/votes/sessions`, {
+      const response = await axios.get(`${API_URL}/votes/sessions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       set({ sessions: response.data, loading: false });
@@ -78,7 +78,7 @@ export const useVotesStore = create<VotesState>((set, get) => ({
       set({ loading: true, error: null });
       const { token } = useAuthStore.getState();
       const response = await axios.post(
-        `${API_URL}/api/votes/sessions`,
+        `${API_URL}/votes/sessions`,
         {
           name,
           description,
@@ -107,7 +107,7 @@ export const useVotesStore = create<VotesState>((set, get) => ({
       set({ loading: true, error: null });
       const { token } = useAuthStore.getState();
       const response = await axios.get(
-        `${API_URL}/api/votes/sessions/${sessionId}`,
+        `${API_URL}/votes/sessions/${sessionId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -126,7 +126,7 @@ export const useVotesStore = create<VotesState>((set, get) => ({
       set({ loading: true, error: null });
       const { token } = useAuthStore.getState();
       await axios.post(
-        `${API_URL}/api/votes/sessions/${sessionId}/vote`,
+        `${API_URL}/votes/sessions/${sessionId}/vote`,
         {
           itemId,
           vote,

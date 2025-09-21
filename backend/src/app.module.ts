@@ -7,6 +7,8 @@ import { InteractionsModule } from './modules/interactions/interactions.module';
 import { FriendsModule } from './modules/friends/friends.module';
 import { VotesModule } from './modules/votes/votes.module';
 import { SearchModule } from './modules/search/search.module';
+import { RecommendationsModule } from './modules/recommendations/recommendations.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 
 @Module({
@@ -23,6 +25,8 @@ import { PrismaModule } from './modules/prisma/prisma.module';
     FriendsModule,
     VotesModule,
     SearchModule,
+    RecommendationsModule,
+    AdminModule,
   ],
 })
 export class AppModule {}
